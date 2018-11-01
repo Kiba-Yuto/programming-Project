@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Object dodge</title>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="400" height="800"></canvas>
+    <script>
+        var playerName = '';
+        while (playerName == '' || playerName == null) {
+            playerName = prompt('What is your name') || ''; //player puts thier name here
+        }
+        var canvas, canvasContext;
+        
+        var totalEnemies = 0;
+        
+        var difficulty = '';
+        while (difficulty != 'easy' && difficulty != 'medium' && difficulty != 'hard')
+            difficulty = prompt('pick your difficulty, easy, medium, hard', 'hard')
+
+        if (difficulty == 'easy') { //easy game setting
+            totalEnemies = 3;
+
+        }
+        if (difficulty == 'medium') { //medium game setting
+           totalEnemies = 6;
+
+        }
+        if (difficulty == 'hard') { //hard game setting
+            totalEnemies = 8;
+
+        }
+
+
+        window.onload = function() {
+            canvas = document.getElementById('gameCanvas');
+            canvasContext = canvas.getContext('2d');
+
+            document.addEventListener('keydown', keyPressed);
+            document.addEventListener('keyup', keyReleased);
+
+            imgAssets = loadImgAssets();
+            //            for (i = 0; i < brickCount; i++) {
+            //                brickArray.push(randomBrick());
+            //            }
+
+            setInterval(mainLoop, 1000 / 50);
+        }
+
+        // player data 
+        var playerXpos = 100; //player spawn
+        var playerYpos = 100; //player spawn
+        const PLAYER_HEIGHT = 20; //player charachter height
+        const PLAYER_WIDTH = 20; //player charachter width
+        var playerXspeed = 8; //player movement speed
+
+        //enemy data
+
+        var score = 0;
+
+        const LEFT_ARROW_KEY = 37; // move player left
+        const RIGHT_ARROW_KEY = 39; // move player right
+        var leftarrowKeyPressed = false;
+        var rightArrowKeyPressed = false;
+
+        var enemies = [];
+        var settingUp = true
+
+        var gameRun = true;
+
+        function mainLoop() {
+            if(settingUp){
+                setUp();
+                settingUp = false;
+            }
+            if (gameRun) {
+                colorRect(0, 0, canvas.width, canvas.height, 'black')
+                drawingImages(img.background, 0, 0, canvas.width, canvas.height);
+                colorRect(playerXpos, playerYpos, PLAYER_WIDTH, PLAYER_HEIGHT, 'blue') // player
+                colorText('score: ' + score, 20, 20, 'black', '20px Arial'); //score
+
+                drawEnemies();
+                moveEnemies();
+                playerMove();
+                
+                
+            } else {
+                colorRect(0, 0, canvas.width, canvas.height, '#990000')
+//                drawingImages(img.background, 0, 0, canvas.width, canvas.height);
+
+                colorText('you dead lol', 50, 50, 'red', '20px Arial');
+
+            }
+        }
+
+
+
+        function keyPressed(evt) {
+            if (evt.keyCode == LEFT_ARROW_KEY) {
+                leftarrowKeyPressed = true;
+            }
+            if (evt.keyCode == RIGHT_ARROW_KEY) {
+                rightArrowKeyPressed = true;
+            }
+        }
+
+        function keyReleased(evt) {
+            if (evt.keyCode == LEFT_ARROW_KEY) {
+                leftarrowKeyPressed = false;
+            }
+            if (evt.keyCode == RIGHT_ARROW_KEY) {
+                rightArrowKeyPressed = false;
+            }
+        }
+
+        function setUp() {
+            playerYpos = canvas.height - PLAYER_HEIGHT * 2;
+            playerXpos = canvas.width / 2 - PLAYER_WIDTH / 2;
+
+            for (i = 0; i < totalEnemies; i++) {
+                enemies.push(makeEnemies());
+            }
+            
+        }
+
+
+        function playerMove() {
+            if (leftarrowKeyPressed) {
+                playerXpos -= playerXspeed;
+            }
+            if (rightArrowKeyPressed) {
+                playerXpos += playerXspeed;
+            }
+        }
+
+
+        function drawEnemies() {
+            enemies.forEach(function(enemy, index) {
+                colorRect(enemy.eXpos, enemy.eYpos, enemy.E_SIZE, enemy.E_SIZE, 'red') // drawing array of enemies from array of objects
+            });
+        }
+
+        function moveEnemies() {
+            enemies.forEach(function(enemy, index) {
+                enemy.eXpos += enemy.eXspeed;
+                enemy.eYpos += enemy.eYspeed;
+
+                if (enemy.eXpos + enemy.E_SIZE > canvas.width) {
+                    enemy.eXspeed *= -1;
+
+                }
+                if (enemy.eXpos < 0) {
+                    enemy.eXspeed *= -1;
+
+                }
+                if (enemy.eYpos > canvas.height) { //enemy speed
+                    enemy.E_SIZE = Math.floor(Math.random() * (40 - 30) + 10);
+                    enemy.eYpos = 0 - enemy.E_SIZE;
+                    enemy.eXpos = Math.floor(Math.random() * (canvas.width - enemy.E_SIZE));
+                    enemy.eXspeed = Math.floor(Math.random() * (10 - 2) + 2);
+                    enemy.eYspeed = Math.floor(Math.random() * (20 - 10) + 2);
+                    score++;
+                }
+
+                if (playerXpos > canvas.width - PLAYER_WIDTH) {
+                    playerXpos = canvas.width - PLAYER_WIDTH;
+                }
+                if (playerXpos < 0) { //player edge detection
+                    playerXpos = 0;
+                }
+
+
+                if (enemy.eXpos + enemy.E_SIZE > playerXpos && enemy.eXpos < playerXpos + PLAYER_WIDTH && enemy.eYpos + enemy.E_SIZE > playerYpos && enemy.eYpos < playerYpos + PLAYER_HEIGHT) { // hit registration
+                    playerXpos = canvas.width / 2 - PLAYER_WIDTH / 2;
+                    gameRun = false;
+
+                }
+
+            });
+        }
+
+
+        function makeEnemies() { // enemie random generation 
+            var E_SIZE = Math.floor(Math.random() * (20 - 10) + 10);
+            var eXpos = Math.floor(Math.random() * (canvas.width - E_SIZE));
+            var eYpos = 0 - E_SIZE;
+            var eXspeed = Math.floor(Math.random() * (10 - 2) + 2);
+            var eYspeed = Math.floor(Math.random() * (10 - 2) + 2);
+
+
+            var randEnemy = {
+                E_SIZE: E_SIZE,
+                eXpos: eXpos,
+                eYpos: eYpos,
+                eXspeed: eXspeed,
+                eYspeed: eYspeed
+            }
+            return randEnemy
+        }
+
+        function loadImgAssets() {
+            img = {};
+            img.background = new Image(); // for picture background
+            img.background.src = 'img/Background.png'
+
+            return img;
+        }
+
+        function colorRect(x, y, w, h, c) { // colorsssssss
+            canvasContext.fillStyle = c;
+            canvasContext.fillRect(x, y, w, h);
+        }
+
+        function colorText(msg, x, y, c, f) { // for things like score and lives (so you can see it)
+            canvasContext.fillStyle = c;
+            canvasContext.fillText(msg, x, y);
+            canvasContext.font = f;
+        }
+
+        function drawingImages(image, dx, dy, w, h) { //pulld the img out so it can be used as a background
+            canvasContext.drawImage(image, dx, dy, w, h);
+        }
+
+    </script>
+
+</body>
